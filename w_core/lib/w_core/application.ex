@@ -14,8 +14,14 @@ defmodule WCore.Application do
        repos: Application.fetch_env!(:w_core, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:w_core, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: WCore.PubSub},
-      # Start a worker by calling: WCore.Worker.start_link(arg)
-      # {WCore.Worker, arg},
+      # --- Motor de Telemetria (Fase 2) ---
+      # A ORDEM IMPORTA:
+      # 1. Cache deve iniciar antes do FlushWorker — ele cria a tabela ETS.
+      #    Se o FlushWorker tentar chamar :ets.tab2list antes da tabela existir,
+      #    o processo falha. O Supervisor :one_for_one garante esta sequência.
+      # 2. FlushWorker deve iniciar após o Repo — ele executa queries no SQLite.
+      WCore.Telemetry.Cache,
+      WCore.Telemetry.FlushWorker,
       # Start to serve requests, typically the last entry
       WCoreWeb.Endpoint
     ]

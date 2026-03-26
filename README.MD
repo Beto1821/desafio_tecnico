@@ -88,7 +88,7 @@ Este comando executa em sequência:
 - `mix deps.get` — baixa dependências
 - `mix ecto.create` — cria o banco SQLite
 - `mix ecto.migrate` — roda as migrations
-- `run priv/repo/seeds.exs` — popula os 8 nós da Planta 42
+- `mix run priv/repo/seeds.exs` — popula os 8 nós da Planta 42
 
 ### 2. Iniciar o servidor
 
@@ -96,15 +96,36 @@ Este comando executa em sequência:
 iex -S mix phx.server
 ```
 
-### 3. Criar um operador
+### 3. Criar um operador e fazer login
 
-Acesse `http://localhost:4000/users/register` e cadastre um usuário.
+O sistema usa **magic link** (sem senha) — o login é feito via link enviado por email.
+
+**3.1 — Cadastro:**
+
+Acesse `http://localhost:4000/users/register` e informe seu email.
+
+**3.2 — Login:**
+
+Acesse `http://localhost:4000/users/log-in`, informe o email cadastrado e clique em **Log in**.
+
+**3.3 — Confirmar o magic link (ambiente de desenvolvimento):**
+
+Em desenvolvimento, os emails não são enviados de verdade. Acesse a caixa de entrada local:
+
+```
+http://localhost:4000/dev/mailbox
+```
+
+Clique no email recebido → você será autenticado automaticamente e redirecionado.
 
 ### 4. Acessar o dashboard
 
-Acesse `http://localhost:4000/telemetry` e faça login.
+```
+http://localhost:4000/telemetry
+```
 
-O painel exibe em tempo real o estado de todos os sensores, atualizando a cada segundo.
+O painel exibe em tempo real o estado de todos os 8 sensores da Planta 42,
+atualizando a cada segundo diretamente do ETS (sem queries ao banco).
 
 ---
 

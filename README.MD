@@ -5,13 +5,18 @@
 
 ---
 
-## O Problema
+## Arquitetura — Duas Camadas, Zero Gargalos
 
-O sistema legado da Planta 42 colapsava sob carga: cada pulso de sensor gerava
-um INSERT individual no banco, causando lock de escrita constante, atraso de
-minutos no painel de operações e falsos positivos paralisando a produção.
+O W-Core foi projetado para absorver alto volume de eventos sem comprometer
+a latência do dashboard. A chave é separar o **caminho quente** (leitura/escrita
+em RAM) do **caminho frio** (persistência em disco), garantindo:
 
-## A Solução — Arquitetura de Duas Camadas
+- **Escrita atômica O(1)** — cada evento é registrado no ETS sem locks
+- **Zero contenção no banco** — o SQLite recebe apenas batch UPSERTs a cada 5s
+- **Dashboard em tempo real** — leitura direto do ETS, sem queries ao banco
+- **Resiliência a picos** — 10.000 eventos concorrentes sem perda de contagem
+
+### Diagrama de Fluxo
 
 ```
 Sensores (Simulator)
@@ -50,7 +55,7 @@ Zero locks de escrita no caminho quente.
 | Phoenix LiveView 1.1 | Dashboard em tempo real |
 | Erlang ETS | Cache de estado quente (RAM) |
 | SQLite + WAL mode | Persistência local (Edge) |
-| Tailwind CSS + DaisyUI | Interface industrial |
+| Tailwind CSS + HEEx | Componentes puros, tema industrial |
 | Docker multi-stage | Empacotamento para produção |
 
 ---
@@ -67,15 +72,51 @@ Zero locks de escrita no caminho quente.
 
 ---
 
-## Pré-requisitos
+## 🚀 Quick Start — Docker (Recomendado)
 
-- Elixir 1.19+
-- Erlang/OTP 28+
-- Docker (opcional, apenas para produção)
+> **Esta é a forma mais rápida de ver o sistema funcionando.**
+> Um único comando sobe a aplicação + servidor de email — sem precisar
+> instalar Elixir, Erlang ou qualquer dependência local.
+
+### Pré-requisito: Docker instalado
+
+### 1. Subir tudo com um comando
+
+```bash
+cd w_core
+docker compose up --build
+```
+
+Isso inicia dois serviços:
+
+| Serviço | URL | Descrição |
+|---|---|---|
+| **W-Core** | http://localhost:4000 | Aplicação Phoenix (dashboard) |
+| **Mailpit** | http://localhost:8025 | Caixa de entrada dos magic links |
+
+### 2. Cadastrar e fazer login
+
+1. Acesse http://localhost:4000/users/register e cadastre seu email
+2. Acesse http://localhost:4000/users/log-in e solicite o magic link
+3. Abra http://localhost:8025 (Mailpit) → clique no email → clique no link
+4. Pronto — você será autenticado e redirecionado ao **Dashboard de Telemetria**
+
+### 3. Dashboard
+
+O painel em http://localhost:4000/telemetry exibe em tempo real o estado de
+todos os 8 sensores da Planta 42, atualizando a cada segundo direto do ETS.
 
 ---
 
-## Como Rodar Localmente
+## Desenvolvimento Local (alternativa)
+
+<details>
+<summary>Expandir instruções para rodar sem Docker</summary>
+
+### Pré-requisitos
+
+- Elixir 1.19+
+- Erlang/OTP 28+
 
 ### 1. Instalar dependências e configurar o banco
 
@@ -108,18 +149,15 @@ Acesse `http://localhost:4000/users/register` e informe seu email.
 
 Acesse `http://localhost:4000/users/log-in`, informe o email cadastrado e clique em **Log in**.
 
-**3.3 — Confirmar o magic link (ambiente de desenvolvimento):**
+**3.3 — Confirmar o magic link:**
 
-Em desenvolvimento, os emails não são enviados de verdade. Acesse a caixa de entrada local:
+Em desenvolvimento, os emails ficam na caixa local:
 
 ```
 http://localhost:4000/dev/mailbox
 ```
 
-Clique no email recebido → você será autenticado automaticamente e redirecionado.
-
-> **Nota:** Em produção (Docker), o `/dev/mailbox` não existe. Veja a seção
-> "Como Rodar com Docker" abaixo para instruções com Mailpit.
+Clique no email recebido → você será autenticado e redirecionado ao dashboard.
 
 ### 4. Acessar o dashboard
 
@@ -127,59 +165,7 @@ Clique no email recebido → você será autenticado automaticamente e redirecio
 http://localhost:4000/telemetry
 ```
 
-O painel exibe em tempo real o estado de todos os 8 sensores da Planta 42,
-atualizando a cada segundo diretamente do ETS (sem queries ao banco).
-
----
-
-## Como Rodar com Docker
-
-O modo recomendado é via `docker compose`, que já sobe a aplicação **e** o
-[Mailpit](https://github.com/axllent/mailpit) (servidor SMTP local com webmail
-para capturar os magic links).
-
-### Subir tudo com um comando
-
-```bash
-cd w_core
-docker compose up --build
-```
-
-Isso inicia dois serviços:
-
-| Serviço | URL | Descrição |
-|---|---|---|
-| **w_core** | http://localhost:4000 | Aplicação Phoenix |
-| **Mailpit** | http://localhost:8025 | Caixa de entrada dos emails (magic links) |
-
-### Fluxo de login (Docker)
-
-1. Acesse http://localhost:4000/users/register e cadastre seu email
-2. Acesse http://localhost:4000/users/log-in e solicite o magic link
-3. Abra http://localhost:8025 (Mailpit) → clique no email → clique no link
-4. Você será autenticado e redirecionado ao dashboard
-
-### Alternativa: Docker run manual (sem Mailpit)
-
-```bash
-cd w_core
-docker build -t w_core:latest .
-
-docker run \
-  -v /data/planta42:/data \
-  -e DATABASE_PATH=/data/w_core_prod.db \
-  -e SECRET_KEY_BASE=$(mix phx.gen.secret) \
-  -e PHX_HOST=localhost \
-  -e PHX_PORT=4000 \
-  -e PHX_SCHEME=http \
-  -p 4000:4000 \
-  w_core:latest
-```
-
-> Sem o Mailpit, será necessário configurar um servidor SMTP real
-> via `SMTP_HOST` e `SMTP_PORT`.
-
-> O diretório `/data/planta42` no host persiste o banco entre reinícios do container.
+</details>
 
 ---
 
@@ -210,33 +196,67 @@ Resultado esperado:
 
 ```
 desafio_tecnico/
+├── CLAUDE.md                         # Regras de Ouro (System Prompt)
+├── README.MD                         # Este arquivo
 ├── docs/
-│   ├── drafts/               # Documentação por passo (Regra de Ouro)
-│   │   ├── step-1-foundation.md
-│   │   ├── step-2-otp-ets.md
-│   │   ├── step-3-liveview-ds.md
-│   │   ├── step-4-tests.md
-│   │   └── step-5-infra-arch.md
-│   └── study/                # Guia de estudo para entrevista técnica
-└── w_core/                   # Aplicação Phoenix
+│   ├── drafts/                       # Documentação por passo (Regra de Ouro)
+│   │   ├── PLANNING.md               # Roadmap e visão geral
+│   │   ├── 001-architecture-overview.md
+│   │   ├── 002-database-schema.md
+│   │   ├── step-1-foundation.md      # Fundação + SQLite + Auth
+│   │   ├── step-2-otp-ets.md         # Motor OTP + ETS
+│   │   ├── step-3-liveview-ds.md     # Dashboard LiveView
+│   │   ├── step-4-tests.md           # Teste de Caos (10k eventos)
+│   │   ├── step-5-infra-arch.md      # Docker + Release
+│   │   └── step-6-smoke-test-hardening.md  # Hardening produção
+│   └── study/                        # Guia de estudo para entrevista
+└── w_core/                           # Aplicação Phoenix
+    ├── docker-compose.yml            # w_core + Mailpit
+    ├── Dockerfile                    # Multi-stage release
     ├── lib/
     │   ├── w_core/
-    │   │   ├── accounts/     # Autenticação (phx.gen.auth)
+    │   │   ├── application.ex        # Supervisor tree
+    │   │   ├── repo.ex               # SQLite + WAL config
+    │   │   ├── accounts/             # Autenticação (phx.gen.auth)
     │   │   └── telemetry/
-    │   │       ├── cache.ex          # GenServer dono do ETS
-    │   │       ├── flush_worker.ex   # Write-Behind para SQLite
-    │   │       ├── simulator.ex      # Gerador de eventos
-    │   │       ├── node.ex           # Schema: sensores cadastrados
-    │   │       └── node_metric.ex    # Schema: estado atual
+    │   │       ├── cache.ex           # GenServer dono do ETS
+    │   │       ├── flush_worker.ex    # Write-Behind para SQLite
+    │   │       ├── simulator.ex       # Gerador de eventos (8 processos)
+    │   │       ├── node.ex            # Schema: sensores cadastrados
+    │   │       └── node_metric.ex     # Schema: estado consolidado
     │   └── w_core_web/
+    │       ├── user_auth.ex           # Plugs + on_mount LiveView
     │       └── live/
     │           └── telemetry_live/
-    │               └── index.ex      # Dashboard LiveView
-    ├── test/
-    │   └── w_core/telemetry/
-    │       └── chaos_test.exs        # Teste de caos: 10k eventos
-    └── Dockerfile
+    │               └── index.ex       # Dashboard LiveView
+    ├── priv/repo/
+    │   ├── migrations/               # Telemetry + Auth tables
+    │   └── seeds.exs                 # 8 sensores da Planta 42
+    └── test/
+        └── w_core/telemetry/
+            └── chaos_test.exs         # Teste de caos: 10k eventos
 ```
+
+---
+
+## Árvore de Supervisão OTP
+
+```
+WCore.Application (:one_for_one)
+├── WCoreWeb.Telemetry          ← métricas BEAM
+├── WCore.Repo                  ← conexão SQLite (WAL mode)
+├── Ecto.Migrator               ← migrations automáticas no boot
+├── DNSCluster                  ← descoberta de nós (clustering)
+├── Phoenix.PubSub               ← barramento de mensagens
+├── WCore.Telemetry.Cache       ← GenServer owner do ETS (inicia primeiro)
+├── WCore.Telemetry.FlushWorker ← Write-Behind: ETS → SQLite a cada 5s
+├── WCore.Telemetry.Simulator   ← 8 processos leves, 1 por sensor
+└── WCoreWeb.Endpoint           ← HTTP + WebSocket (Bandit)
+```
+
+**Estratégia `:one_for_one`:** se o `FlushWorker` falhar, somente ele é
+reiniciado. O `Cache` (e sua tabela ETS) permanece intacto — eventos continuam
+sendo acumulados durante o restart, sem perda de dados em memória.
 
 ---
 
@@ -252,3 +272,4 @@ Cada decisão de trade-off está documentada em `/docs/drafts/`. Resumo:
 | SQLite + WAL | PostgreSQL | Edge computing, zero dependências externas |
 | `update_counter` atômico | Leitura-escrita manual | Previne race condition no contador |
 | `live_session` + `on_mount` | Plug apenas | Plugs não protegem WebSockets |
+| `:one_for_one` Supervisor | `:rest_for_one` | Falha isolada sem efeito cascata |

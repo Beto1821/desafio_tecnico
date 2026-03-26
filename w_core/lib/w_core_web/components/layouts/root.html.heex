@@ -30,24 +30,24 @@
       })();
     </script>
   </head>
-  <body>
-    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+  <body class="bg-slate-950">
+    <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 py-2 justify-end bg-slate-900/80 border-b border-slate-800 text-sm">
       <%= if @current_scope do %>
-        <li>
+        <li class="text-slate-400">
           {@current_scope.user.email}
         </li>
         <li>
-          <.link href={~p"/users/settings"}>Settings</.link>
+          <.link href={~p"/users/settings"} class="text-slate-300 hover:text-white transition-colors">Configurações</.link>
         </li>
         <li>
-          <.link href={~p"/users/log-out"} method="delete">Log out</.link>
+          <.link href={~p"/users/log-out"} method="delete" class="text-slate-400 hover:text-red-400 transition-colors">Sair</.link>
         </li>
       <% else %>
         <li>
-          <.link href={~p"/users/register"}>Register</.link>
+          <.link href={~p"/users/register"} class="text-slate-300 hover:text-white transition-colors">Registrar</.link>
         </li>
         <li>
-          <.link href={~p"/users/log-in"}>Log in</.link>
+          <.link href={~p"/users/log-in"} class="text-emerald-400 hover:text-emerald-300 transition-colors font-medium">Entrar</.link>
         </li>
       <% end %>
     </ul>

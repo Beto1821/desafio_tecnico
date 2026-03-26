@@ -32,6 +32,7 @@ defmodule WCoreWeb.TelemetryLive.Index do
     {:ok,
      socket
      |> assign(:page_title, "Planta 42 — Dashboard Industrial")
+     |> assign(:refresh_interval, @refresh_interval)
      |> assign(:machine_ids, machine_ids)
      |> assign(:sensors, fetch_sensors(machine_ids))
      |> assign(:last_updated, Time.utc_now()),

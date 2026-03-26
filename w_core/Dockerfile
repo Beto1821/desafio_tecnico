@@ -12,8 +12,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 ARG ELIXIR_VERSION=1.19.5
-ARG OTP_VERSION=28.4.1
-ARG DEBIAN_VERSION=trixie-20250317-slim
+ARG OTP_VERSION=26.2.5.2
+ARG DEBIAN_VERSION=bookworm-20260316-slim
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
@@ -43,14 +43,14 @@ RUN mkdir config
 COPY config/config.exs config/${MIX_ENV}.exs config/
 RUN mix deps.compile
 
-# Compila assets (Tailwind + esbuild)
+# Compila a aplicação primeiro (gera phoenix-colocated em _build/)
 COPY priv priv
-COPY assets assets
-RUN mix assets.deploy
-
-# Compila a aplicação
 COPY lib lib
 RUN mix compile
+
+# Compila assets (Tailwind + esbuild) — depende do phoenix-colocated gerado acima
+COPY assets assets
+RUN mix assets.deploy
 
 # Copia configurações de runtime (podem referenciar env vars)
 COPY config/runtime.exs config/
@@ -76,12 +76,14 @@ ENV LC_ALL en_US.UTF-8
 
 WORKDIR /app
 
-# Cria usuário não-root para segurança
-RUN useradd --create-home app
-USER app
+# Cria usuário não-root e diretório de dados com permissão correta
+RUN useradd --create-home app && mkdir -p /data && chown app:app /data
 
-# Copia apenas o artefato compilado do builder
+# Copia o artefato compilado e garante permissão de execução nos binários
 COPY --from=builder --chown=app:app /app/_build/prod/rel/w_core ./
+RUN chmod +x /app/bin/server /app/bin/w_core
+
+USER app
 
 # Variáveis de ambiente obrigatórias em produção:
 # SECRET_KEY_BASE  — gerado com `mix phx.gen.secret`

@@ -1,59 +1,90 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="mx-auto max-w-sm">
-    <div class="text-center">
-      <.header>Welcome {@user.email}</.header>
-    </div>
 
-    <.form
-      :if={!@user.confirmed_at}
-      for={@form}
-      id="confirmation_form"
-      action={~p"/users/log-in?_action=confirmed"}
-      phx-mounted={JS.focus_first()}
-    >
-      <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
-      <.button
-        name={@form[:remember_me].name}
-        value="true"
-        phx-disable-with="Confirming..."
-        class="btn btn-primary w-full"
+<div class="fixed inset-0 z-50 bg-slate-950 text-slate-100 font-sans antialiased overflow-auto">
+
+  <%!-- ── FUNDO: MARCA D'ÁGUA ──────────────────────────────────────── --%>
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none" aria-hidden="true">
+    <img src={~p"/images/logo.svg"} class="w-[600px] opacity-[0.03] blur-sm scale-110" />
+  </div>
+
+  <%!-- ── CARD CENTRALIZADO ────────────────────────────────────────── --%>
+  <main class="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl shadow-slate-950/60">
+
+      <%!-- Header --%>
+      <div class="border-b border-slate-800 pb-6 mb-8 flex flex-col items-center gap-4">
+        <img src={~p"/images/logo.svg"} class="w-12 h-12 opacity-80" />
+
+        <div class="flex items-center gap-3">
+          <span class="flex h-3 w-3 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <h1 class="text-xl font-extrabold tracking-tighter text-white uppercase">
+            Planta 42 <span class="text-slate-600 font-medium">|</span>
+            <span class="text-slate-200">WCore</span>
+          </h1>
+        </div>
+
+        <p class="text-sm text-slate-400 text-center">
+          Bem-vindo, <span class="text-white font-medium">{@user.email}</span>
+        </p>
+      </div>
+
+      <%!-- Formulário: Primeira vez (confirma conta + login) --%>
+      <.form
+        :if={!@user.confirmed_at}
+        for={@form}
+        id="confirmation_form"
+        action={~p"/users/log-in?_action=confirmed"}
+        phx-mounted={JS.focus_first()}
       >
-        Confirm and stay logged in
-      </.button>
-      <.button phx-disable-with="Confirming..." class="btn btn-primary btn-soft w-full mt-2">
-        Confirm and log in only this time
-      </.button>
-    </.form>
-
-    <.form
-      :if={@user.confirmed_at}
-      for={@form}
-      id="login_form"
-      action={~p"/users/log-in"}
-      phx-mounted={JS.focus_first()}
-    >
-      <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
-      <%= if @current_scope do %>
-        <.button variant="primary" phx-disable-with="Logging in..." class="btn btn-primary w-full">
-          Log in
-        </.button>
-      <% else %>
+        <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
         <.button
           name={@form[:remember_me].name}
           value="true"
-          phx-disable-with="Logging in..."
-          class="btn btn-primary w-full"
+          phx-disable-with="Confirmando..."
+          class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 text-sm shadow-lg shadow-emerald-950/30"
         >
-          Keep me logged in on this device
+          Confirmar conta e entrar →
         </.button>
-        <.button phx-disable-with="Logging in..." class="btn btn-primary btn-soft w-full mt-2">
-          Log me in only this time
-        </.button>
-      <% end %>
-    </.form>
+      </.form>
 
-    <p :if={!@user.confirmed_at} class="alert alert-outline mt-8">
-      Tip: If you prefer passwords, you can enable them in the user settings.
-    </p>
-  </div>
+      <%!-- Formulário: Conta já confirmada (login direto) --%>
+      <.form
+        :if={@user.confirmed_at}
+        for={@form}
+        id="login_form"
+        action={~p"/users/log-in"}
+        phx-mounted={JS.focus_first()}
+      >
+        <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
+        <.button
+          name={@form[:remember_me].name}
+          value="true"
+          phx-disable-with="Entrando..."
+          class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 text-sm shadow-lg shadow-emerald-950/30"
+        >
+          Entrar no Dashboard →
+        </.button>
+      </.form>
+
+      <%!-- Dica --%>
+      <p class="text-center text-sm text-slate-500 mt-6">
+        Você será redirecionado ao
+        <span class="text-emerald-400">Dashboard de Telemetria</span>
+        automaticamente.
+      </p>
+
+    </div>
+
+    <%!-- Versão --%>
+    <div class="mt-8 text-[10px] text-slate-700 uppercase tracking-widest font-mono">
+      WCore Telemetry Engine v0.1.0 · Planta 42
+    </div>
+
+  </main>
+
+</div>
+
 </Layouts.app>

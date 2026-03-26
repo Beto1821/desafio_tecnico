@@ -47,11 +47,13 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
+  port = String.to_integer(System.get_env("PHX_PORT", "443"))
+  scheme = System.get_env("PHX_SCHEME", "https")
 
   config :w_core, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :w_core, WCoreWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: host, port: port, scheme: scheme],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -95,19 +97,13 @@ if config_env() == :prod do
 
   # ## Configuring the mailer
   #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
-  #
-  #     config :w_core, WCore.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
-  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
-  # and Finch out-of-the-box. This configuration is typically done at
-  # compile-time in your config/prod.exs:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  # Uses SMTP adapter pointing to Mailpit (or any SMTP relay).
+  # Defaults: SMTP_HOST=mailpit, SMTP_PORT=1025 (Mailpit in docker-compose).
+  config :w_core, WCore.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: System.get_env("SMTP_HOST", "mailpit"),
+    port: String.to_integer(System.get_env("SMTP_PORT", "1025")),
+    ssl: false,
+    tls: :never,
+    auth: :never
 end

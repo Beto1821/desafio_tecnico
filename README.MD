@@ -118,6 +118,9 @@ http://localhost:4000/dev/mailbox
 
 Clique no email recebido → você será autenticado automaticamente e redirecionado.
 
+> **Nota:** Em produção (Docker), o `/dev/mailbox` não existe. Veja a seção
+> "Como Rodar com Docker" abaixo para instruções com Mailpit.
+
 ### 4. Acessar o dashboard
 
 ```
@@ -131,24 +134,50 @@ atualizando a cada segundo diretamente do ETS (sem queries ao banco).
 
 ## Como Rodar com Docker
 
-### Build da imagem
+O modo recomendado é via `docker compose`, que já sobe a aplicação **e** o
+[Mailpit](https://github.com/axllent/mailpit) (servidor SMTP local com webmail
+para capturar os magic links).
+
+### Subir tudo com um comando
+
+```bash
+cd w_core
+docker compose up --build
+```
+
+Isso inicia dois serviços:
+
+| Serviço | URL | Descrição |
+|---|---|---|
+| **w_core** | http://localhost:4000 | Aplicação Phoenix |
+| **Mailpit** | http://localhost:8025 | Caixa de entrada dos emails (magic links) |
+
+### Fluxo de login (Docker)
+
+1. Acesse http://localhost:4000/users/register e cadastre seu email
+2. Acesse http://localhost:4000/users/log-in e solicite o magic link
+3. Abra http://localhost:8025 (Mailpit) → clique no email → clique no link
+4. Você será autenticado e redirecionado ao dashboard
+
+### Alternativa: Docker run manual (sem Mailpit)
 
 ```bash
 cd w_core
 docker build -t w_core:latest .
-```
 
-### Executar o container
-
-```bash
 docker run \
   -v /data/planta42:/data \
   -e DATABASE_PATH=/data/w_core_prod.db \
   -e SECRET_KEY_BASE=$(mix phx.gen.secret) \
   -e PHX_HOST=localhost \
+  -e PHX_PORT=4000 \
+  -e PHX_SCHEME=http \
   -p 4000:4000 \
   w_core:latest
 ```
+
+> Sem o Mailpit, será necessário configurar um servidor SMTP real
+> via `SMTP_HOST` e `SMTP_PORT`.
 
 > O diretório `/data/planta42` no host persiste o banco entre reinícios do container.
 

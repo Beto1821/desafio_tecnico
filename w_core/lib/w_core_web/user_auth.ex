@@ -59,7 +59,7 @@ defmodule WCoreWeb.UserAuth do
     socket = mount_current_scope(socket, session)
 
     if socket.assigns.current_scope && socket.assigns.current_scope.user do
-      {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/")}
+      {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/telemetry")}
     else
       {:cont, socket}
     end
@@ -246,7 +246,7 @@ defmodule WCoreWeb.UserAuth do
     end
   end
 
-  defp signed_in_path(_conn), do: ~p"/"
+  defp signed_in_path(_conn), do: ~p"/telemetry"
 
   @doc """
   Plug for routes that require the user to be authenticated.

@@ -53,6 +53,21 @@
         </div>
       </div>
 
+      <%!-- Aviso de Mailpit (visível em produção com SMTP) --%>
+      <div :if={smtp_mail_adapter?()} class="mb-6 flex gap-3 items-start bg-sky-950/40 border border-sky-800/50 text-sky-300 text-sm rounded-xl px-4 py-3">
+        <.icon name="hero-envelope" class="size-5 shrink-0 mt-0.5 text-sky-400" />
+        <div>
+          <p class="font-medium">Após solicitar o link, acesse sua caixa de entrada.</p>
+          <p class="text-sky-400/70">
+            Abra o
+            <.link href={mailpit_url()} target="_blank" class="underline hover:text-sky-200 transition-colors">
+              Mailpit ({mailpit_url()})
+            </.link>
+            para ver o email com o magic link.
+          </p>
+        </div>
+      </div>
+
       <%!-- ── FORMULÁRIO 1: Magic Link (recomendado) ─────────────────────── --%>
       <.form :let={f} for={@form} as={:user} id="login_form_magic" action={~p"/users/log-in"}>
         <div class="space-y-4">

@@ -1,0 +1,35 @@
+services:
+  w_core:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - planta42_data:/data
+    environment:
+      DATABASE_PATH: /data/w_core_prod.db
+      SECRET_KEY_BASE: "enIsLqMD2lNQY18RN5B/FwJWDfyAQrmJUSzWdQjhuX2HwLp5V2qhrxEeTbGlMUrw"
+      PHX_HOST: localhost
+      PHX_PORT: "4000"
+      PHX_SCHEME: http
+      PHX_SERVER: "true"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    depends_on:
+      - mailpit
+    # Roda migrate + seed (idempotentes) antes de subir o servidor
+    command: >
+      sh -c "
+        /app/bin/w_core eval 'WCore.Release.migrate()' &&
+        /app/bin/w_core eval 'WCore.Release.seed()' &&
+        /app/bin/server
+      "
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # Webmail UI
+      - "1025:1025"   # SMTP
+    restart: unless-stopped
+
+volumes:
+  planta42_data:

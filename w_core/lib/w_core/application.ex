@@ -22,6 +22,11 @@ defmodule WCore.Application do
       # 2. FlushWorker deve iniciar após o Repo — ele executa queries no SQLite.
       WCore.Telemetry.Cache,
       WCore.Telemetry.FlushWorker,
+      # --- Simulador de Telemetria (Fase 3) ---
+      # 3. Simulator deve iniciar após o Cache (tabela ETS já existe) e após o
+      #    Repo (busca machine_identifiers no banco no init). Spawna um processo
+      #    leve por sensor; escreve direto no ETS via Cache.record_event/4.
+      WCore.Telemetry.Simulator,
       # Start to serve requests, typically the last entry
       WCoreWeb.Endpoint
     ]

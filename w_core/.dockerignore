@@ -1,0 +1,29 @@
+# ── Artefatos de build local ──────────────────────────────────────────────────
+_build/
+deps/
+
+# ── Banco de dados local (nunca vai para o container) ────────────────────────
+*.db
+*.db-shm
+*.db-wal
+
+# ── Assets compilados (serão recompilados no builder stage) ──────────────────
+priv/static/assets/
+
+# ── Node / binários de tooling ───────────────────────────────────────────────
+assets/node_modules/
+
+# ── Arquivos de ambiente e segredos ──────────────────────────────────────────
+.env
+.env.*
+config/prod.secret.exs
+
+# ── Logs e temporários ───────────────────────────────────────────────────────
+*.log
+/tmp/
+
+# ── Git e IDE ────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.elixir_ls/
+.vscode/
